@@ -1,0 +1,337 @@
+#include <stdio.h>
+#include <time.h>
+
+
+// Accounts INFO
+struct account {
+        int acc_no;
+        char name[100];
+        char lname[100];
+        float balance;
+    };
+
+// Function PROTOTYPES
+void menu();
+void create();
+void view();
+void update();
+void del();
+
+
+int main() {
+
+    int run = 1;
+    int choice; 
+
+    while(run == 1) {
+
+        menu();
+
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1:
+                create();
+                break;
+            case 2:
+                view();
+                break;
+            case 3:
+                update();
+                break;
+            case 4:
+                del();
+                break;
+            case 5:
+                run = 0;
+                break;
+            default:
+                printf("Enter a number from 1 to 5\n");
+            }
+    }
+
+    return 0;
+}
+
+//************************************************************MENU*************************************************************************
+
+void menu() {
+
+    int choice; 
+    
+    printf("\n\t\t---- MENU ----\t\t\n");
+    printf("\n (1) Create Account\n (2) View Account\n (3) Update Account\n (4) Delete Account\n (5) Exit\n");
+    printf("\n===============================================\n");
+
+    printf("Enter your choice: ");
+}
+
+//********************************************************CREATING ACCOUNT*****************************************************************
+
+void create() {
+
+    printf("\n\t\t---- CREATING ACCOUNT ----\t\t\n");
+
+    struct account acc;
+
+    FILE *ptr = fopen("accounts.txt", "a");
+
+    if (ptr == NULL) {
+        printf("Error opening the file\n");
+        return;
+    }
+
+    printf("\nEnter account number: ");
+    scanf("%d", &acc.acc_no);
+
+    printf("\nEnter first name: ");
+    scanf("%s", acc.name);
+
+    printf("\nEnter last name: ");
+    scanf("%s", acc.lname);
+
+    printf("\nEnter account current balance: ");
+    scanf("%2f", &acc.balance);
+
+
+    fwrite(&acc, sizeof(acc), 1, ptr);
+
+    fclose(ptr);
+
+    printf("\n====== Account added successfully! ======\n");
+    printf("\n==============================================\n");
+
+    //LOG FILE
+    FILE *log = fopen("log.txt","a");
+
+    char message[100];
+    time_t ltime;
+    
+    ltime = time(NULL); 
+    sprintf(message, "%s Account added successfully!\n\n" , ctime(&ltime));
+    fputs(message, log);
+    
+    fclose(log); 
+}
+
+//*********************************************************VIEWING ACCOUNT****************************************************************
+
+void view() {
+
+    struct account acc;
+
+    FILE *ptr = fopen("accounts.txt", "r");
+
+    if (ptr == NULL) {
+        printf("Error opening the file\n");
+        return;
+    }
+
+    printf("\n\t\t***ACCOUNT DETAILS***\t\t\n");
+
+    char view;
+
+    printf("\nDo you want to view all accounts? [y/n] \n");
+    scanf(" %c", &view);
+
+    if(view == 'y') {
+
+        while (fread(&acc, sizeof(acc), 1, ptr)) {
+        
+                printf("\nAccount Number: %d", acc.acc_no);
+                printf("\nName: %s %s", acc.name, acc.lname);
+                printf("\nBalance: %.2f", acc.balance);
+                printf("\n----------------------------------------------\n");
+        
+            }
+    }
+
+    else if(view == 'n') {
+
+        int f_id;
+
+        printf("\nEnter ID to view the account: ");
+        scanf("%d", &f_id);
+
+        while (fread(&acc, sizeof(acc), 1, ptr)) {
+
+        if(acc.acc_no != f_id) {
+
+            continue;
+        }
+
+        else {
+                printf("\nAccount Number: %d", acc.acc_no);
+                printf("\nName: %s %s", acc.name, acc.lname);
+                printf("\nBalance: %.2f", acc.balance);
+                printf("\n----------------------------------------------\n");
+        
+            }
+        }
+    }
+
+    printf("\n==============================================\n");
+
+    fclose(ptr);
+
+    
+    //LOG FILE
+    FILE *log = fopen("log.txt","a");
+
+    char message[100];
+    time_t ltime;
+    
+    ltime = time(NULL); 
+    sprintf(message, "%s Account Viewed\n\n" , ctime(&ltime));
+    fputs(message, log);
+    
+    fclose(log); 
+}
+
+//*********************************************************UPDATING ACCOUNT***************************************************************
+
+void update() {
+
+    printf("\n\t\t***UPDATING ACCOUNT***\t\t\n");
+    
+    struct account acc;
+
+    FILE *ptr = fopen("accounts.txt", "r");
+    FILE *temp_file = fopen("temp.txt", "w");
+
+    if (ptr == NULL || temp_file == NULL) {
+        printf("Error opening the file\n");
+        return;
+    }
+    
+    int f_id;
+    printf("\nEnter ID to update the account: ");
+    scanf("%d", &f_id);
+
+    while (fread(&acc, sizeof(acc), 1, ptr)) {
+        
+        if(acc.acc_no != f_id) {
+            
+            fwrite(&acc, sizeof(acc), 1, temp_file);
+        }
+
+        else {
+            int update;
+            float deposit, withdraw;
+            char dw;
+
+            printf("\n (1) Update First Name\n (2) Update Last Name\n (3) Update Balance\n");
+            printf("Enter your choice: ");
+            scanf("%d", &update);
+            printf("\n===============================================\n");
+
+            switch(update) {
+
+            case 1:
+                printf("\nEnter New First Name: ");
+                scanf("%s", acc.name);
+                break;
+
+            case 2:
+                printf("\nEnter Last Name: ");
+                scanf("%s", acc.lname);
+                break;
+            
+            case 3:
+                printf("\nDeposit or Withdraw? (d/w)\n");
+                scanf(" %c", &dw);
+
+                    if(dw == 'd') {
+                        printf("\nCurrent balance is %.2f", acc.balance);
+                        printf("\nEnter amount to deposit: ");
+                        scanf("%f", &deposit);
+                        acc.balance = acc.balance + deposit;
+                        printf("\nThe balance after deposit is %.2f", acc.balance);
+                    }
+
+                    else if(dw == 'w') {
+                        printf("\nCurrent balance is %2f", acc.balance);
+                        printf("\nEnter amount to withdraw: ");
+                        scanf("%f", &withdraw);
+                        acc.balance = acc.balance - withdraw;
+                        printf("\nThe balance after withdraw is %2f", acc.balance);
+                    }
+                break;
+
+            default:
+                printf("Enter a number from 1 to 3\n");
+            }
+
+            fwrite(&acc, sizeof(acc), 1, temp_file);
+        }
+
+    rename("accounts.txt", "old.txt");
+    rename("temp.txt", "accounts.txt");
+
+    fclose(ptr);  
+    fclose(temp_file);
+
+    }
+
+
+    //LOG FILE
+    FILE *log = fopen("log.txt","a");
+
+    char message[1000];
+    time_t ltime;
+    
+    ltime = time(NULL); 
+    sprintf(message, "%s Account Updated\n\n" , ctime(&ltime));
+    fputs(message, log);
+    
+    fclose(log); 
+}
+
+//*********************************************************DELETE ACCOUNT*****************************************************************
+
+void del() {
+
+    struct account acc;
+
+    FILE *ptr = fopen("accounts.txt", "r");
+    FILE *temp_file = fopen("temp.txt", "w");
+
+    if (ptr == NULL || temp_file == NULL) {
+        printf("Error opening the file\n");
+        return;
+    }
+
+    int del_acc;
+
+    printf("\nEnter ID to delete the account: ");
+    scanf("%d", &del_acc);
+
+    while (fread(&acc, sizeof(acc), 1, ptr)) {
+
+        if(acc.acc_no != del_acc) {
+
+            fwrite(&acc, sizeof(acc), 1, temp_file);
+        }
+    }
+
+    printf("\n===== Account deleted successfully! =====\n");
+
+    rename("accounts.txt", "old.txt");
+    rename("temp.txt", "accounts.txt");
+
+    fclose(ptr);
+    fclose(temp_file);
+
+
+    //LOG FILE
+    FILE *log = fopen("log.txt","a");
+
+    char message[100];
+    time_t ltime;
+    
+    ltime = time(NULL); 
+    sprintf(message, "%s Account Deleted Successfully!\n\n" , ctime(&ltime));
+    fputs(message, log);
+    
+    fclose(log); 
+}
